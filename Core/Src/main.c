@@ -36,6 +36,8 @@
 #define GPIOB_MODER  (*(volatile uint32_t*)0x40020400)
 #define GPIOB_ODR    (*(volatile uint32_t*)0x40020414)
 #define GPIOB_IDR    (*(volatile uint32_t*)0x40020410)
+#define GPIOA_MODER  (*(volatile uint32_t*)0x40020000)
+#define GPIOA_ODR    (*(volatile uint32_t*)0x40020014)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -102,6 +104,9 @@ int main(void)
 
   RCC_AHB1ENR |= (1 << 0) | (1 << 1);
 
+  GPIOA_MODER |= (1 << 2);
+  GPIOA_MODER &= ~(1 << 3); // PA1 output=01
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -166,6 +171,12 @@ int main(void)
 		  int temp_f = (bytes[2] * 9 / 5) + 32;
 		  int len = sprintf(msg, "Humidity: %d%%  Temp: %dF\r\n", bytes[0], temp_f);
 		  HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
+
+		  if(temp_f > 75) {
+			  GPIOA_ODR |= (1 << 1);
+			  HAL_Delay(200);
+			  GPIOA_ODR &= ~(1 << 1);
+		  }
 	  } else {
 		  char msg[32];
 		  int len = sprintf(msg, "Checksum failed\r\n");
@@ -321,7 +332,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
@@ -332,12 +343,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
+  /*Configure GPIO pins : PA1 LD2_Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB0 */
   GPIO_InitStruct.Pin = GPIO_PIN_0;
